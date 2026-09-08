@@ -234,8 +234,8 @@ def test_piper_driver_virtual_can_cpv_move_get_set_and_scaling():
         assert abs(got_pos - pos) < 1e-4
 
         vel = -0.02
-        arm.move_cpv_vel(2, vel)
-        got_sp = arm.get_cpv_vel(2, timeout=1.0, min_interval=0.0)
+        arm.move_cpv_vel(6, vel)
+        got_sp = arm.get_cpv_vel(6, timeout=1.0, min_interval=0.0)
         assert got_sp is not None
         assert abs(got_sp - vel) < 1e-6
 

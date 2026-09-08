@@ -39,11 +39,15 @@ Read firmware with [get_firmware()](piper_api.md#get-firmware-info--get_firmware
 | `piper` | `ArmModel.PIPER` | `piper/default`, `piper/versions/v183`, `piper/versions/v188`, `piper/versions/v189` |
 | `piper_h` | `ArmModel.PIPER_H` | Same logic as `piper` per `PiperFW` (thin subclass) |
 | `piper_l` | `ArmModel.PIPER_L` | Same as `piper_h` |
-| `piper_x` | `ArmModel.PIPER_X` | Same `PiperFW` routing; **extra overrides on `V188` / `V189`** |
+| `piper_x` | `ArmModel.PIPER_X` | Same `PiperFW` routing; **extra joint-sign overrides on every driver** |
 
 **`piper_x` @ `PiperFW.V188`:** before calling the parent implementation, **`move_mit`** negates `p_des`, `v_des`, and `t_ff` on joints **4 and 5**; **`move_cpv_pos`** negates `pos` on joints **4 and 5**.
 
 **`piper_x` @ `PiperFW.V189`:** inherits `v188` except **`move_mit`** no longer applies joint 4/5 sign workaround (fixed in firmware); **`move_cpv_pos`** still negates `pos` on joints **4 and 5**.
+
+**CPV sign workaround (every `PiperFW` driver):** the firmware inverts the requested sign on some joints, so the SDK negates the value before sending — applied on **all** drivers (`default` / `v183` / `v188` / `v189`):
+- **`move_cpv_vel`:** negates `vel` on joints **2–5** for `piper` / `piper_h` / `piper_l`; negates `vel` on joints **2 and 3** for `piper_x` (joints 1, 4, 5, 6 keep the requested sign).
+- **`move_cpv_pos` (`piper_x` only):** negates `pos` on joints **4 and 5**.
 
 `piper_h` / `piper_l` have **no** additional overrides beyond their `piper` counterpart.
 
@@ -107,7 +111,8 @@ Legend: **✅** supported · **⚠️** supported with version-specific behavior
 | **`set_motion_mode` / mode TX** | Default `ArmMsgModeCtrl` @ `0x151` | Inherits `DEFAULT` | `ArmMsgModeCtrlV188` @ `0x151` | Inherits `V188` |
 | **`get_arm_status` RX** | Default status @ `0x2A1` | Inherits `DEFAULT` | `ArmMsgFeedbackStatusV188` @ `0x2A1` | Inherits `V188` |
 | **CPV CAN IDs** | `0x181`–`0x186` (joints 1–6) | Inherits | Inherits | Inherits |
-| **`piper_x` joint sign** | — | — | Joints **4, 5**: negate in `move_mit` and `move_cpv_pos` | `move_mit` fixed (no flip); `move_cpv_pos` still negates joints **4, 5** |
+| **`move_cpv_vel` joint sign** | Joints **2–5** negated (`piper`/`piper_h`/`piper_l`); joints **2–3** negated (`piper_x`) | Same as `DEFAULT` | Same as `DEFAULT` | Same as `DEFAULT` |
+| **`piper_x` joint sign** | Joints **4, 5**: negate in `move_cpv_pos` | Same as `DEFAULT` | Joints **4, 5**: negate in `move_mit` and `move_cpv_pos` | `move_mit` fixed (no flip); `move_cpv_pos` still negates joints **4, 5** |
 
 ---
 
@@ -178,11 +183,15 @@ Legend: **✅** supported · **⚠️** supported with version-specific behavior
 | `piper` | `ArmModel.PIPER` | `piper/default`、`piper/versions/v183`、`piper/versions/v188`、`piper/versions/v189` |
 | `piper_h` | `ArmModel.PIPER_H` | 与 `piper` 相同 `PiperFW` 路由（薄子类） |
 | `piper_l` | `ArmModel.PIPER_L` | 同 `piper_h` |
-| `piper_x` | `ArmModel.PIPER_X` | 同 `PiperFW` 路由；**`V188` / `V189` 有额外 override** |
+| `piper_x` | `ArmModel.PIPER_X` | 同 `PiperFW` 路由；**在每个驱动上都有额外的关节符号 override** |
 
 **`piper_x` @ `PiperFW.V188`：** 调用父类前，**`move_mit`** 对 **4、5 轴** 的 `p_des`、`v_des`、`t_ff` 取反；**`move_cpv_pos`** 对 **4、5 轴** 的 `pos` 取反。
 
 **`piper_x` @ `PiperFW.V189`：** 继承 `v188`，但 **`move_mit`** 不再做 4/5 轴符号 workaround（固件已修复）；**`move_cpv_pos`** 仍对 **4、5 轴** `pos` 取反。
+
+**CPV 符号 workaround（所有 `PiperFW` 驱动）：** 固件会对部分关节的请求值取反，SDK 在下发前对该值取反——在**每个**驱动（`default` / `v183` / `v188` / `v189`）上生效：
+- **`move_cpv_vel`：** `piper` / `piper_h` / `piper_l` 对 **2–5 轴** `vel` 取反；`piper_x` 对 **2、3 轴** `vel` 取反（1、4、5、6 轴保持请求符号）。
+- **`move_cpv_pos`（仅 `piper_x`）：** 对 **4、5 轴** `pos` 取反。
 
 `piper_h` / `piper_l` 除对应 `piper` 驱动外**无**额外 override。
 
@@ -246,7 +255,8 @@ Legend: **✅** supported · **⚠️** supported with version-specific behavior
 | **`set_motion_mode` / 模式下发** | 默认 `ArmMsgModeCtrl` @ `0x151` | 继承 `DEFAULT` | `ArmMsgModeCtrlV188` @ `0x151` | 继承 `V188` |
 | **`get_arm_status` 接收** | 默认状态 @ `0x2A1` | 继承 `DEFAULT` | `ArmMsgFeedbackStatusV188` @ `0x2A1` | 继承 `V188` |
 | **CPV CAN ID** | `0x181`–`0x186`（1–6 轴） | 继承 | 继承 | 继承 |
-| **`piper_x` 关节符号** | — | — | **4、5 轴**：`move_mit` 与 `move_cpv_pos` 取反 | `move_mit` 已修复（不取反）；`move_cpv_pos` 仍对 **4、5 轴** 取反 |
+| **`move_cpv_vel` 关节符号** | **2–5 轴**取反（`piper`/`piper_h`/`piper_l`）；`piper_x` 为 **2–3 轴**取反 | 同 `DEFAULT` | 同 `DEFAULT` | 同 `DEFAULT` |
+| **`piper_x` 关节符号** | **4、5 轴**：`move_cpv_pos` 取反 | 同 `DEFAULT` | **4、5 轴**：`move_mit` 与 `move_cpv_pos` 取反 | `move_mit` 已修复（不取反）；`move_cpv_pos` 仍对 **4、5 轴** 取反 |
 
 ---
 
